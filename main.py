@@ -8,7 +8,7 @@ from matplotlib import rcParams
 matplotlib.rcParams['font.family'] = 'NanumGothic'
 matplotlib.rcParams['axes.unicode_minus'] = False
 
-# 파일 업로드
+# 제목 및 파일 업로드
 st.title("연령대 비율 비교 분석")
 uploaded_file = st.file_uploader("CSV 파일을 업로드하세요:", type="csv")
 
@@ -59,4 +59,46 @@ if uploaded_file is not None:
             total_population = 0
 
         # 비율 계산
-        if total_populati
+        if total_population > 0:
+            age_ratio = (age_population / total_population) * 100
+        else:
+            age_ratio = 0
+
+        cities.append(region)
+        ratios[region] = age_ratio
+
+    # 도시 선택
+    selected_city = st.selectbox("비교할 도시를 선택하세요:", cities)
+
+    if selected_city:
+        selected_ratio = ratios[selected_city]
+
+        # 비율이 가장 비슷한 도시 찾기
+        differences = {city: abs(ratio - selected_ratio) for city, ratio in ratios.items() if city != selected_city}
+        similar_city = min(differences, key=differences.get)
+        similar_ratio = ratios[similar_city]
+
+        # 선택한 도시와 비슷한 도시의 비율 계산
+        labels = [f'{selected_age_group} 비율', '기타 비율']
+        sizes_selected = [selected_ratio, 100 - selected_ratio]
+        sizes_similar = [similar_ratio, 100 - similar_ratio]
+        colors = ['#ff9999', '#66b3ff']
+        explode = (0.1, 0)
+
+        # 원 그래프 생성
+        fig, axs = plt.subplots(1, 2, figsize=(14, 7))
+
+        axs[0].pie(sizes_selected, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%',
+                   shadow=True, startangle=140)
+        axs[0].set_title(f"{selected_city} {selected_age_group} 비율")
+
+        axs[1].pie(sizes_similar, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%',
+                   shadow=True, startangle=140)
+        axs[1].set_title(f"{similar_city} {selected_age_group} 비율")
+
+        st.pyplot(fig)
+
+        st.write(f"선택한 도시: {selected_city}")
+        st.write(f"{selected_age_group} 비율: {selected_ratio:.2f}%")
+        st.write(f"가장 비슷한 도시: {similar_city}")
+        st.w
