@@ -16,19 +16,19 @@ if uploaded_file is not None:
     # 데이터 읽기
     data = pd.read_csv(uploaded_file, encoding='euc-kr')
 
-    # 연령대 설정 (0세부터 100세까지)
-    age_groups = {f"{age}세": [f"2024년06월_계_{age}세"] for age in range(101)}
-    
+    # 10세 단위 연령대 설정
+    age_groups = {f'{age}대': [f"2024년06월_계_{age}세"] for age in range(0, 101, 10)}
+
     # 도시 리스트 및 비율 계산
     cities = []
     ratios = {}
-    
+
     # 연령대 선택
     selected_age_group = st.selectbox("비율을 구할 연령대를 선택하세요:", list(age_groups.keys()))
 
     for _, row in data.iterrows():
         region = row['행정구역']
-        
+
         # 선택한 연령대의 인구수 합계 계산
         age_columns = age_groups[selected_age_group]
         age_population = 0
