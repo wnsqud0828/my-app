@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib import rcParams
@@ -23,9 +22,8 @@ if uploaded_file is not None:
     # 도시 리스트 및 비율 계산
     cities = []
     ratios = []
-    city_index = {}
 
-    for idx, row in data.iterrows():
+    for _, row in data.iterrows():
         region = row['행정구역']
 
         # 중학생 연령대 인구수 합계 계산
@@ -52,55 +50,41 @@ if uploaded_file is not None:
 
         cities.append(region)
         ratios.append(middle_school_ratio)
-        city_index[region] = idx  # 도시와 인덱스를 사전에 저장
 
-    # 도시 자동완성 기능
-    user_input = st.text_input("비교할 도시를 입력하세요:", "")
+    # 도시 선택
+    selected_city = st.selectbox("비교할 도시를 선택하세요:", cities)
 
-    if user_input:
-        # 입력한 텍스트를 포함하는 도시들 필터링
-        matching_cities = [city for city in cities if user_input.lower() in city.lower()]
-        
-        if matching_cities:
-            # 필터링된 도시 중 첫 번째 도시를 자동 선택
-            selected_city = st.selectbox("도시를 선택하세요:", matching_cities)
-            
-            if selected_city:
-                selected_idx = city_index[selected_city]
-                selected_ratio = ratios[selected_idx]
+    if selected_city:
+        selected_index = cities.index(selected_city)
+        selected_ratio = ratios[selected_index]
 
-                # 모든 도시와의 비율 차이 계산
-                ratios_array = np.array(ratios)
-                differences = np.abs(ratios_array - selected_ratio)
-                differences[selected_idx] = np.inf  # 선택한 도시를 제외
+        # 비율이 가장 비슷한 도시 찾기
+        differences = [abs(ratio - selected_ratio) for ratio in ratios]
+        min_diff_index = differences.index(min(differences[:selected_index] + differences[selected_index + 1:]))
+        similar_city = cities[min_diff_index]
+        similar_ratio = ratios[min_diff_index]
 
-                # 가장 비슷한 도시 찾기
-                min_diff_index = np.argmin(differences)
-                similar_city = cities[min_diff_index]
-                similar_ratio = ratios[min_diff_index]
+        # 선택한 도시와 비슷한 도시의 비율 계산
+        labels = ['중학생 비율', '기타 비율']
+        sizes_selected = [selected_ratio, 100 - selected_ratio]
+        sizes_similar = [similar_ratio, 100 - similar_ratio]
+        colors = ['#ff9999', '#66b3ff']
+        explode = (0.1, 0)
 
-                # 원 그래프 생성
-                labels = ['중학생 비율', '기타 비율']
-                sizes_selected = [selected_ratio, 100 - selected_ratio]
-                sizes_similar = [similar_ratio, 100 - similar_ratio]
-                colors = ['#ff9999', '#66b3ff']
-                explode = (0.1, 0)
+        # 원 그래프 생성
+        fig, axs = plt.subplots(1, 2, figsize=(14, 7))
 
-                fig, axs = plt.subplots(1, 2, figsize=(14, 7))
+        axs[0].pie(sizes_selected, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%',
+                   shadow=True, startangle=140)
+        axs[0].set_title(f"{selected_city} 중학생 비율")
 
-                axs[0].pie(sizes_selected, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%',
-                           shadow=True, startangle=140)
-                axs[0].set_title(f"{selected_city} 중학생 비율")
+        axs[1].pie(sizes_similar, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%',
+                   shadow=True, startangle=140)
+        axs[1].set_title(f"{similar_city} 중학생 비율")
 
-                axs[1].pie(sizes_similar, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%',
-                           shadow=True, startangle=140)
-                axs[1].set_title(f"{similar_city} 중학생 비율")
+        st.pyplot(fig)
 
-                st.pyplot(fig)
-
-                st.write(f"선택한 도시: {selected_city}")
-                st.write(f"중학생 비율: {selected_ratio:.2f}%")
-                st.write(f"가장 비슷한 도시: {similar_city}")
-                st.write(f"중학생 비율: {similar_ratio:.2f}%")
-        else:
-            st.write("입력한 도시와 일치하는 도시가 없습니다.")
+        st.write(f"선택한 도시: {selected_city}")
+        st.write(f"중학생 비율: {selected_ratio:.2f}%")
+        st.write(f"가장 비슷한 도시: {similar_city}")
+        st.write(f"중학생 비율: {similar_ratio:.2f}%")
