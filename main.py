@@ -16,14 +16,9 @@ if uploaded_file is not None:
     # 데이터 읽기
     data = pd.read_csv(uploaded_file, encoding='euc-kr')
 
-    # 연령대 목록 설정
-    age_groups = {
-        '중학생': ['2024년06월_계_12세', '2024년06월_계_13세', '2024년06월_계_14세'],
-        '노인': ['2024년06월_계_65세이상'],
-        '50대': ['2024년06월_계_50세', '2024년06월_계_51세', '2024년06월_계_52세', '2024년06월_계_53세', '2024년06월_계_54세', '2024년06월_계_55세'],
-        '어린이': ['2024년06월_계_0세', '2024년06월_계_1세', '2024년06월_계_2세', '2024년06월_계_3세', '2024년06월_계_4세', '2024년06월_계_5세', '2024년06월_계_6세', '2024년06월_계_7세', '2024년06월_계_8세', '2024년06월_계_9세', '2024년06월_계_10세', '2024년06월_계_11세']
-    }
-
+    # 연령대 설정 (0세부터 100세까지)
+    age_groups = {f"{age}세": [f"2024년06월_계_{age}세"] for age in range(101)}
+    
     # 도시 리스트 및 비율 계산
     cities = []
     ratios = {}
@@ -67,8 +62,8 @@ if uploaded_file is not None:
         selected_ratio = ratios[selected_city]
 
         # 비율이 가장 비슷한 도시 찾기
-        differences = [abs(ratio - selected_ratio) for city, ratio in ratios.items() if city != selected_city]
-        similar_city = min(ratios, key=lambda city: abs(ratios[city] - selected_ratio) if city != selected_city else float('inf'))
+        differences = {city: abs(ratio - selected_ratio) for city, ratio in ratios.items() if city != selected_city}
+        similar_city = min(differences, key=differences.get)
         similar_ratio = ratios[similar_city]
 
         # 선택한 도시와 비슷한 도시의 비율 계산
