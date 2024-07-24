@@ -9,7 +9,7 @@ matplotlib.rcParams['font.family'] = 'NanumGothic'
 matplotlib.rcParams['axes.unicode_minus'] = False
 
 # 파일 업로드
-st.title("전국 중학생 비율 분석")
+st.title("중학생 비율 비교 분석")
 uploaded_file = st.file_uploader("CSV 파일을 업로드하세요:", type="csv")
 
 if uploaded_file is not None:
@@ -19,28 +19,28 @@ if uploaded_file is not None:
     # 중학생 연령대 추출
     middle_school_ages = ['2024년06월_계_12세', '2024년06월_계_13세', '2024년06월_계_14세']
 
-    # 결과 저장을 위한 리스트
-    results = []
+    # 도시 리스트 및 비율 계산
+    cities = []
+    ratios = []
 
-    # 데이터 처리
     for _, row in data.iterrows():
         region = row['행정구역']
 
         # 중학생 연령대 인구수 합계 계산
         middle_school_population = 0
         for age_col in middle_school_ages:
-            value = row.get(age_col, '0').replace(',', '')  # 값이 없을 경우 '0'으로 대체
+            value = row.get(age_col, '0').replace(',', '')
             try:
                 middle_school_population += int(value)
             except ValueError:
-                continue  # 변환할 수 없는 경우 무시
+                continue
 
         # 총 인구수 계산
         total_population_str = row.get('2024년06월_계_총인구수', '0').replace(',', '')
         try:
             total_population = int(total_population_str)
         except ValueError:
-            total_population = 0  # 변환할 수 없는 경우 0으로 대체
+            total_population = 0
 
         # 비율 계산
         if total_population > 0:
@@ -48,26 +48,43 @@ if uploaded_file is not None:
         else:
             middle_school_ratio = 0
 
-        results.append((region, middle_school_ratio))
+        cities.append(region)
+        ratios.append(middle_school_ratio)
 
-    # 비율이 가장 높은 지역 찾기
-    if results:
-        highest_ratio_region, highest_ratio = max(results, key=lambda x: x[1])
+    # 도시 선택
+    selected_city = st.selectbox("비교할 도시를 선택하세요:", cities)
 
-        # 결과 출력
-        st.subheader("중학생 비율이 가장 높은 지역")
-        st.write(f"지역: {highest_ratio_region}")
-        st.write(f"중학생 비율: {highest_ratio:.2f}%")
+    if selected_city:
+        selected_index = cities.index(selected_city)
+        selected_ratio = ratios[selected_index]
 
-        # 전체 지역 중 중학생 비율 분포를 시각화
-        regions = [result[0] for result in results]
-        ratios = [result[1] for result in results]
+        # 비율이 가장 비슷한 도시 찾기
+        differences = [abs(ratio - selected_ratio) for ratio in ratios]
+        min_diff_index = differences.index(min(differences[:selected_index] + differences[selected_index + 1:]))
+        similar_city = cities[min_diff_index]
+        similar_ratio = ratios[min_diff_index]
 
-        fig, ax = plt.subplots()
-        ax.barh(regions, ratios, color='#66b3ff')
-        ax.set_xlabel('중학생 비율 (%)')
-        ax.set_title('각 지역의 중학생 비율')
+        # 선택한 도시와 비슷한 도시의 비율 계산
+        labels = ['중학생 비율', '기타 비율']
+        sizes_selected = [selected_ratio, 100 - selected_ratio]
+        sizes_similar = [similar_ratio, 100 - similar_ratio]
+        colors = ['#ff9999', '#66b3ff']
+        explode = (0.1, 0)
+
+        # 원 그래프 생성
+        fig, axs = plt.subplots(1, 2, figsize=(14, 7))
+
+        axs[0].pie(sizes_selected, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%',
+                   shadow=True, startangle=140)
+        axs[0].set_title(f"{selected_city} 중학생 비율")
+
+        axs[1].pie(sizes_similar, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%',
+                   shadow=True, startangle=140)
+        axs[1].set_title(f"{similar_city} 중학생 비율")
 
         st.pyplot(fig)
-    else:
-        st.write("데이터가 비어있습니다.")
+
+        st.write(f"선택한 도시: {selected_city}")
+        st.write(f"중학생 비율: {selected_ratio:.2f}%")
+        st.write(f"가장 비슷한 도시: {similar_city}")
+        st.write(f"중학생 비율: {similar_ratio:.2f}%")
