@@ -1,7 +1,12 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-import koreanize_matplotlib
+import matplotlib
+from matplotlib import rcParams
+
+# 한글 폰트 설정
+matplotlib.rcParams['font.family'] = 'NanumGothic'
+matplotlib.rcParams['axes.unicode_minus'] = False
 
 # 파일 업로드
 st.title("중학생 연령대 인구 비율")
